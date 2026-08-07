@@ -1,34 +1,27 @@
+import streamlit as st
 import joblib
-import numpy as np
-from flask import Flask, request, jsonify
+import pandas as pd
 
-app = Flask(__name__)
+model = joblib.load("house_price_model.pkl")
+scaler = joblib.load("scaler.pkl")
 
-# Load the trained model and scaler
-model = joblib.load('linear_regression_model.pkl')
-scaler = joblib.load('scaler.pkl')
+st.title("House Price Prediction")
 
-@app.route('/')
-def home():
-    return "Welcome to the House Price Prediction API! Use /predict to get predictions."
+area = st.number_input("Area")
+bedrooms = st.number_input("Bedrooms")
+bathroom = st.number_input("Bathroom")
+stories = st.number_input("Stories")
+parking = st.number_input("Parking")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    data = request.get_json(force=True)
-    
-    # Expected input format:
-    # {"Area": 1500, "Bedrooms": 3, "Bathrooms": 2, "Stories": 1, "Parking": 1}
+if st.button("Predict"):
 
-    # Convert input to numpy array and reshape for prediction
-    features = np.array([data['Area'], data['Bedrooms'], data['Bathrooms'], data['Stories'], data['Parking']]).reshape(1, -1)
-    
-    # Scale the features using the loaded scaler
-    scaled_features = scaler.transform(features)
-    
-    # Make prediction
-    prediction = model.predict(scaled_features)[0]
-    
-    return jsonify({'predicted_price': float(prediction)})
+    data = pd.DataFrame(
+        [[area, bedrooms, bathroom, stories, parking]],
+        columns=["Area", "Bedrooms", "Bathroom", "Stories", "Parking"]
+    )
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    data = scaler.transform(data)
+
+    prediction = model.predict(data)
+
+    st.success(f"Predicted Price: ₹{prediction[0]:,.2f}")
